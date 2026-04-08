@@ -1,24 +1,25 @@
 FROM debian:13.1-slim AS build-base
 
-RUN --mount=type=cache,target=/var/cache/apt,id=cache-base \
-    --mount=type=cache,target=/var/lib/apt,id=cache-base \
-    DEBIAN_FRONTEND=noninteractive apt update \
-    && apt install -y \
-           autoconf \
-           automake \
-           bison \
-           build-essential \
-           ca-certificates \
-           file \
-           gzip \
-           libtool \
-           make \
-           patch \
-           pkg-config \
-           re2c \
-           tar \
-           wget \
-           xz-utils
+RUN --mount=type=cache,target=/var/cache/apt,id=cache-build-gcc \
+    --mount=type=cache,target=/var/lib/apt,id=cache-build-gcc \
+    DEBIAN_FRONTEND=noninteractive apt update && \
+    apt install -y \
+      autoconf \
+      automake \
+      bison \
+      build-essential \
+      ca-certificates \
+      file \
+      gzip \
+      libtool \
+      make \
+      patch \
+      pkg-config \
+      re2c \
+      tar \
+      wget \
+      xz-utils && \
+    rm -rf /var/lib/apt/lists/*
 
 # gmp-4.3.2
 FROM build-base AS build-gmp
