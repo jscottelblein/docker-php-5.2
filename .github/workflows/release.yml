@@ -39,17 +39,17 @@ jobs:
       - name: Build
         run: |
           docker build \
-          -t ghcr.io/clagomess/docker-php-5.2:${{github.run_number}}-$(uname -m) \
-          -t docker.io/clagomess/docker-php-5.2:${{github.run_number}}-$(uname -m) \
+          -t ghcr.io/stardogg/docker-php-5.2:${{github.run_number}}-$(uname -m) \
+          -t docker.io/stardogg/docker-php-5.2:${{github.run_number}}-$(uname -m) \
           -f Dockerfile .
 
       - name: Push GHCR
         run: |
-          docker push ghcr.io/clagomess/docker-php-5.2 --all-tags
+          docker push ghcr.io/stardogg/docker-php-5.2 --all-tags
 
       - name: Push DockerHub
         run: |
-          docker push docker.io/clagomess/docker-php-5.2 --all-tags
+          docker push docker.io/stardogg/docker-php-5.2 --all-tags
 
   push-manifest:
     needs: build
@@ -62,9 +62,9 @@ jobs:
         ]
         include:
           - registry: docker.io
-            image: ghcr.io/clagomess/docker-php-5.2
+            image: docker.io/stardogg/docker-php-5.2
           - registry: ghcr.io
-            image: docker.io/clagomess/docker-php-5.2
+            image: ghcr.io/stardogg/docker-php-5.2
 
     steps:
       - name: Pull
