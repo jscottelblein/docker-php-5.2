@@ -11,15 +11,12 @@ RUN --mount=type=cache,target=/var/cache/apt,id=cache-base \
            ca-certificates \
            file \
            gzip \
-           iputils-ping \
            libtool \
            make \
-           nano \
            patch \
            pkg-config \
            re2c \
            tar \
-           vim \
            wget \
            xz-utils
 
