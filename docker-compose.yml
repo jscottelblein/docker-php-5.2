@@ -1,27 +1,23 @@
 services:
   web:
-    image: ghcr.io/clagomess/docker-php-5.2
-    links:
-      - "oracle:oracle-host"
-      - "mysql:mysql-host"
+    image: ghcr.io/stardogg/docker-php-5.2
     ports:
-      - "8000:80"
-      - "2200:22"
+      - published: 8000
+        target: 80
+        protocol: 'tcp'
+        mode: 'host'
     volumes:
-      - .:/srv/htdocs
+      - .:/var/www/html
     environment:
+      TZ: 'America/Chicago'
       XDEBUG_REMOTE_ENABLE: 1
       XDEBUG_REMOTE_HOST: host.docker.internal
       XDEBUG_REMOTE_PORT: 9000
-
-  oracle:
-    image: docker.io/gvenzl/oracle-free:23-slim-faststart
-    ports:
-      - "1521:1521"
-    environment:
-      ORACLE_PASSWORD: "010203"
-      APP_USER: "php"
-      APP_USER_PASSWORD: "010203"
+      PHP_DISPLAY_ERRORS: 'on'
+      PHP_HTML_ERRORS: 'on'
+      PHP_LOG_ERRORS: 'on'
+    networks:
+      - 'mysql'
 
   mysql:
     image: docker.io/mariadb:latest
@@ -32,3 +28,10 @@ services:
       MARIADB_DATABASE: "test"
       MARIADB_USER: "php"
       MARIADB_PASSWORD: "010203"
+    networks:
+      - 'mysql'
+
+networks:
+  mysql:
+    external: true
+    name: 'mysql'
