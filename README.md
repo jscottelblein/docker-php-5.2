@@ -9,7 +9,7 @@ Container with:
 - OpenSSL 0.9.8H
 
 ## Download
-- Github:    `docker pull ghcr.io/stardogg/docker-php-5.2:latest`
+- Github:    `docker pull ghcr.io/jscottelblein/docker-php-5.2:latest`
 - DockerHub: `docker pull jscottelblein/docker-php-5.2:latest`
 
 ## Usage
@@ -30,7 +30,7 @@ docker run --rm \
   -e PHP_HTML_ERRORS=on \
   -e PHP_LOG_ERRORS=on \
   -v .:/var/www/html \
-  ghcr.io/stardogg/docker-php-5.2 
+  ghcr.io/jscottelblein/docker-php-5.2 
 ```
 
 \* Things **removed** from the original image this was forked from:
