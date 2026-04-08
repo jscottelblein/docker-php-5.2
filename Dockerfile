@@ -1,24 +1,10 @@
 FROM debian:13.1-slim AS build-base
 
-RUN --mount=type=cache,target=/var/cache/apt,id=cache-build-gcc \
-    --mount=type=cache,target=/var/lib/apt,id=cache-build-gcc \
-    DEBIAN_FRONTEND=noninteractive apt update && \
-    apt install -y \
-      autoconf \
-      automake \
-      bison \
-      build-essential \
-      ca-certificates \
-      file \
-      gzip \
-      libtool \
-      make \
-      patch \
-      pkg-config \
-      re2c \
-      tar \
-      wget \
-      xz-utils && \
+RUN --mount=type=cache,target=/var/cache/apt,id=cache-build-base-apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,id=cache-build-base-lists,sharing=locked \
+    DEBIAN_FRONTEND=noninteractive apt-get update && \
+    apt-get install -y autoconf automake bison build-essential ca-certificates \
+      file gzip libtool make patch pkg-config re2c tar wget xz-utils && \
     rm -rf /var/lib/apt/lists/*
 
 # gmp-4.3.2
@@ -30,10 +16,11 @@ RUN wget --no-verbose https://ftpmirror.gnu.org/gmp/gmp-4.3.2.tar.gz \
     -O /srv/gmp-4.3.2.tar.gz
 RUN tar -xf /srv/gmp-4.3.2.tar.gz -C /srv/
 
-RUN --mount=type=cache,target=/var/cache/apt,id=cache-gmp \
-    --mount=type=cache,target=/var/lib/apt,id=cache-gmp \
-    DEBIAN_FRONTEND=noninteractive apt update \
-    && apt install gcc-12 m4 make -y
+RUN --mount=type=cache,target=/var/cache/apt,id=cache-gmp-apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,id=cache-gmp-lists,sharing=locked \
+    DEBIAN_FRONTEND=noninteractive apt-get update && \
+    apt-get install -y gcc-12 m4 make && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN CC=gcc-12 \
     ./configure \
@@ -51,10 +38,11 @@ RUN wget --no-verbose https://ftpmirror.gnu.org/mpfr/mpfr-2.4.2.tar.gz \
     -O /srv/mpfr-2.4.2.tar.gz
 RUN tar -xf /srv/mpfr-2.4.2.tar.gz -C /srv/
 
-RUN --mount=type=cache,target=/var/cache/apt,id=cache-mpfr \
-    --mount=type=cache,target=/var/lib/apt,id=cache-mpfr \
-    DEBIAN_FRONTEND=noninteractive apt update \
-    && apt install gcc make -y
+RUN --mount=type=cache,target=/var/cache/apt,id=cache-mpfr-apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,id=cache-mpfr-lists,sharing=locked \
+    DEBIAN_FRONTEND=noninteractive apt-get update && \
+    apt-get install -y gcc make && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY --from=build-gmp /opt/gmp-4.3.2 /opt/gmp-4.3.2
 
@@ -74,10 +62,11 @@ RUN wget --no-verbose https://ftpmirror.gnu.org/mpc/mpc-1.0.1.tar.gz \
     -O /srv/mpc-1.0.1.tar.gz
 RUN tar -xf /srv/mpc-1.0.1.tar.gz -C /srv/
 
-RUN --mount=type=cache,target=/var/cache/apt,id=cache-mpc \
-    --mount=type=cache,target=/var/lib/apt,id=cache-mpc \
-    DEBIAN_FRONTEND=noninteractive apt update \
-    && apt install gcc make -y
+RUN --mount=type=cache,target=/var/cache/apt,id=cache-mpc-apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,id=cache-mpc-lists,sharing=locked \
+    DEBIAN_FRONTEND=noninteractive apt-get update && \
+    apt-get install -y gcc make && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY --from=build-gmp /opt/gmp-4.3.2 /opt/gmp-4.3.2
 COPY --from=build-mpfr /opt/mpfr-2.4.2 /opt/mpfr-2.4.2
@@ -98,10 +87,11 @@ RUN wget --no-verbose https://ftpmirror.gnu.org/gcc/gcc-8.2.0/gcc-8.2.0.tar.gz \
     -O /srv/gcc-8.2.0.tar.gz
 RUN tar -xf /srv/gcc-8.2.0.tar.gz -C /srv/
 
-RUN --mount=type=cache,target=/var/cache/apt,id=cache-gcc \
-    --mount=type=cache,target=/var/lib/apt,id=cache-gcc \
-    DEBIAN_FRONTEND=noninteractive apt update \
-    && apt install build-essential -y
+RUN --mount=type=cache,target=/var/cache/apt,id=cache-gcc-apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,id=cache-gcc-lists,sharing=locked \
+    DEBIAN_FRONTEND=noninteractive apt-get update && \
+    apt-get install -y build-essential && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY --from=build-gmp /opt/gmp-4.3.2 /opt/gmp-4.3.2
 COPY --from=build-mpfr /opt/mpfr-2.4.2 /opt/mpfr-2.4.2
@@ -111,7 +101,6 @@ RUN ln -s /opt/mpfr-2.4.2/lib/libmpfr.so.1 /lib/$(uname -m)-linux-gnu/libmpfr.so
     ln -s /opt/gmp-4.3.2/lib/libgmp.so.3 /lib/$(uname -m)-linux-gnu/libgmp.so.3 && \
     ldconfig
 
-# GMP 4.2+, MPFR 2.4.0+ and MPC 0.8.0+.
 RUN ./configure \
     --prefix /opt/gcc-8.2.0 \
     --with-gmp=/opt/gmp-4.3.2 \
@@ -138,10 +127,11 @@ RUN wget --no-verbose https://archive.apache.org/dist/httpd/httpd-2.2.3.tar.gz \
     -O /srv/httpd-2.2.3.tar.gz
 RUN tar -xf /srv/httpd-2.2.3.tar.gz -C /srv/
 
-RUN --mount=type=cache,target=/var/cache/apt,id=cache-httpd \
-    --mount=type=cache,target=/var/lib/apt,id=cache-httpd \
-    DEBIAN_FRONTEND=noninteractive apt update  \
-    && apt install gcc-12 make -y
+RUN --mount=type=cache,target=/var/cache/apt,id=cache-httpd-apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,id=cache-httpd-lists,sharing=locked \
+    DEBIAN_FRONTEND=noninteractive apt-get update && \
+    apt-get install -y gcc-12 make && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN CC=gcc-12 \
     ./configure \
@@ -164,10 +154,11 @@ RUN wget --no-verbose https://download.gnome.org/sources/libxml2/2.8/libxml2-2.8
     -O /srv/libxml2-2.8.0.tar.xz
 RUN tar -xf /srv/libxml2-2.8.0.tar.xz -C /srv/
 
-RUN --mount=type=cache,target=/var/cache/apt,id=cache-libxml2 \
-    --mount=type=cache,target=/var/lib/apt,id=cache-libxml2 \
-    DEBIAN_FRONTEND=noninteractive apt update  \
-    && apt install gcc make -y
+RUN --mount=type=cache,target=/var/cache/apt,id=cache-libxml2-apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,id=cache-libxml2-lists,sharing=locked \
+    DEBIAN_FRONTEND=noninteractive apt-get update && \
+    apt-get install -y gcc make && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN ./configure \
     --build=$(uname -m)-unknown-linux-gnu \
@@ -187,13 +178,14 @@ RUN tar -xf /srv/openssl.tar.gz \
     --strip-components=1 \
     -C /srv/
 
-RUN --mount=type=cache,target=/var/cache/apt,id=cache-openssl \
-    --mount=type=cache,target=/var/lib/apt,id=cache-openssl \
-    DEBIAN_FRONTEND=noninteractive apt update  \
-    && apt install gcc make -y
+RUN --mount=type=cache,target=/var/cache/apt,id=cache-openssl-apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,id=cache-openssl-lists,sharing=locked \
+    DEBIAN_FRONTEND=noninteractive apt-get update && \
+    apt-get install -y gcc make && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN ./config \
-    --prefix=/opt/openssl-0.9.8h  \
+    --prefix=/opt/openssl-0.9.8h \
     --openssldir=/opt/openssl-0.9.8h/openssl \
     shared
 
@@ -209,10 +201,11 @@ RUN wget --no-verbose https://curl.se/download/archeology/curl-7.19.7.tar.gz \
     -O /srv/curl-7.19.7.tar.gz
 RUN tar -xf /srv/curl-7.19.7.tar.gz -C /srv/
 
-RUN --mount=type=cache,target=/var/cache/apt,id=cache-curl \
-    --mount=type=cache,target=/var/lib/apt,id=cache-curl \
-    DEBIAN_FRONTEND=noninteractive apt update  \
-    && apt install gcc-12 make -y
+RUN --mount=type=cache,target=/var/cache/apt,id=cache-curl-apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,id=cache-curl-lists,sharing=locked \
+    DEBIAN_FRONTEND=noninteractive apt-get update && \
+    apt-get install -y gcc-12 make && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY --from=build-openssl /opt/openssl-0.9.8h /opt/openssl-0.9.8h
 
@@ -224,37 +217,6 @@ RUN CC=gcc-12 \
     --disable-shared
 RUN make -j$(nproc)
 RUN make install
-
-# oracle
-FROM build-base AS build-oracle
-
-RUN --mount=type=cache,target=/var/cache/apt,id=cache-oracle \
-    --mount=type=cache,target=/var/lib/apt,id=cache-oracle \
-    DEBIAN_FRONTEND=noninteractive apt update && \
-    apt install unzip -y
-
-RUN mkdir -p /opt/oracle/instantclient
-
-RUN URL=$([ "$(uname -m)" = "x86_64" ] && \
-      echo "https://download.oracle.com/otn_software/linux/instantclient/instantclient-basic-linuxx64.zip" || \
-      echo "https://download.oracle.com/otn_software/linux/instantclient/2326100/instantclient-basic-linux.arm64-23.26.1.0.0.zip"); \
-    wget --no-verbose $URL \
-    -O /tmp/instantclient-basic.zip
-RUN unzip /tmp/instantclient-basic.zip -d /tmp/instantclient-basic && \
-    mv /tmp/instantclient-basic/instantclient_*/* /opt/oracle/instantclient/
-
-RUN URL=$([ "$(uname -m)" = "x86_64" ] && \
-      echo "https://download.oracle.com/otn_software/linux/instantclient/instantclient-sdk-linuxx64.zip" || \
-      echo "https://download.oracle.com/otn_software/linux/instantclient/2326100/instantclient-sdk-linux.arm64-23.26.1.0.0.zip"); \
-    wget --no-verbose $URL \
-    -O /tmp/instantclient-sdk.zip
-RUN unzip /tmp/instantclient-sdk.zip -d /tmp/instantclient-sdk && \
-    mv /tmp/instantclient-sdk/instantclient_*/* /opt/oracle/instantclient/
-
-RUN ln -s /opt/oracle/instantclient/libnnz.so /opt/oracle/instantclient/libnnz11.so && \
-    mkdir /opt/oracle/client && \
-    ln -s /opt/oracle/instantclient/sdk/include /opt/oracle/client/include && \
-    ln -s /opt/oracle/instantclient /opt/oracle/client/lib
 
 # mysql-5.0.95
 FROM build-base AS build-mysql
@@ -272,10 +234,11 @@ RUN wget "https://gitweb.git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;
     -O config.guess
 RUN chmod +x config.guess && ./config.guess
 
-RUN --mount=type=cache,target=/var/cache/apt,id=cache-mysql \
-    --mount=type=cache,target=/var/lib/apt,id=cache-mysql \
-    DEBIAN_FRONTEND=noninteractive apt update  \
-    && apt install gcc-12 g++-12 make procps libncurses5-dev -y
+RUN --mount=type=cache,target=/var/cache/apt,id=cache-mysql-apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,id=cache-mysql-lists,sharing=locked \
+    DEBIAN_FRONTEND=noninteractive apt-get update && \
+    apt-get install -y gcc-12 g++-12 make procps libncurses5-dev && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN CC=gcc-12 \
     CXX=g++-12 \
@@ -294,22 +257,21 @@ FROM build-gcc AS build-php
 WORKDIR /srv/php-5.2.17
 
 RUN wget --no-verbose https://museum.php.net/php5/php-5.2.17.tar.gz \
- -O /srv/php-5.2.17.tar.gz
+    -O /srv/php-5.2.17.tar.gz
 
 RUN tar -xf /srv/php-5.2.17.tar.gz \
- --one-top-level=php-5.2.17 \
- --strip-components=1 \
- -C /srv/
+    --one-top-level=php-5.2.17 \
+    --strip-components=1 \
+    -C /srv/
 
-# jpg/png
 RUN ln -s /usr/lib/$(uname -m)-linux-gnu/libjpeg.so /usr/lib/ \
- && ln -s /usr/lib/$(uname -m)-linux-gnu/libpng.so /usr/lib/
+    && ln -s /usr/lib/$(uname -m)-linux-gnu/libpng.so /usr/lib/
 
-# other libs
-RUN --mount=type=cache,target=/var/cache/apt,id=cache-php \
- --mount=type=cache,target=/var/lib/apt,id=cache-php \
- DEBIAN_FRONTEND=noninteractive apt update && \
- apt install libpq-dev libgd-dev libmcrypt-dev libltdl-dev -y
+RUN --mount=type=cache,target=/var/cache/apt,id=cache-php-apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,id=cache-php-lists,sharing=locked \
+    DEBIAN_FRONTEND=noninteractive apt-get update && \
+    apt-get install -y libpq-dev libgd-dev libmcrypt-dev libltdl-dev && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY --from=build-httpd /opt/httpd-2.2.3 /opt/httpd-2.2.3
 COPY --from=build-libxml2 /opt/libxml2-2.8.0 /opt/libxml2-2.8.0
@@ -318,42 +280,42 @@ COPY --from=build-curl /opt/curl-7.19.7 /opt/curl-7.19.7
 COPY --from=build-mysql /opt/mysql-5.0.95 /opt/mysql-5.0.95
 
 RUN ./configure \
- --host=$(uname -m)-unknown-linux-gnu \
- --prefix=/opt/php-5.2.17 \
- --with-gnu-ld \
- --with-config-file-scan-dir=/opt/php-5.2.17/php.ini.d \
- --with-apxs2=/opt/httpd-2.2.3/bin/apxs \
- --with-libxml-dir=/opt/libxml2-2.8.0 \
- --with-pgsql \
- --with-pdo-pgsql \
- --with-gd \
- --with-curl=/opt/curl-7.19.7 \
- --enable-soap \
- --with-mcrypt \
- --enable-mbstring \
- --enable-calendar \
- --enable-bcmath \
- --enable-zip \
- --enable-exif \
- --enable-ftp \
- --enable-shmop \
- --enable-sockets \
- --enable-sysvmsg \
- --enable-sysvsem \
- --enable-sysvshm \
- --enable-wddx \
- --enable-dba \
- --with-openssl=/opt/openssl-0.9.8h \
- --with-gettext \
- --with-mime-magic=/opt/httpd-2.2.3/conf/magic \
- --with-ttf \
- --with-png-dir=/usr \
- --with-jpeg-dir=/usr \
- --with-freetype-dir=/usr \
- --with-zlib \
- --with-mysqli=/opt/mysql-5.0.95/bin/mysql_config \
- --with-mysql=/opt/mysql-5.0.95 \
- --with-pdo-mysql=/opt/mysql-5.0.95
+    --host=$(uname -m)-unknown-linux-gnu \
+    --prefix=/opt/php-5.2.17 \
+    --with-gnu-ld \
+    --with-config-file-scan-dir=/opt/php-5.2.17/php.ini.d \
+    --with-apxs2=/opt/httpd-2.2.3/bin/apxs \
+    --with-libxml-dir=/opt/libxml2-2.8.0 \
+    --with-pgsql \
+    --with-pdo-pgsql \
+    --with-gd \
+    --with-curl=/opt/curl-7.19.7 \
+    --enable-soap \
+    --with-mcrypt \
+    --enable-mbstring \
+    --enable-calendar \
+    --enable-bcmath \
+    --enable-zip \
+    --enable-exif \
+    --enable-ftp \
+    --enable-shmop \
+    --enable-sockets \
+    --enable-sysvmsg \
+    --enable-sysvsem \
+    --enable-sysvshm \
+    --enable-wddx \
+    --enable-dba \
+    --with-openssl=/opt/openssl-0.9.8h \
+    --with-gettext \
+    --with-mime-magic=/opt/httpd-2.2.3/conf/magic \
+    --with-ttf \
+    --with-png-dir=/usr \
+    --with-jpeg-dir=/usr \
+    --with-freetype-dir=/usr \
+    --with-zlib \
+    --with-mysqli=/opt/mysql-5.0.95/bin/mysql_config \
+    --with-mysql=/opt/mysql-5.0.95 \
+    --with-pdo-mysql=/opt/mysql-5.0.95
 
 RUN make -j$(nproc)
 RUN make install
@@ -391,7 +353,7 @@ RUN mkdir -p /srv/opcache
 RUN wget --no-verbose https://raw.githubusercontent.com/rlerdorf/opcache-status/refs/heads/master/opcache.php \
     -O /srv/opcache/index.php
 
-## php zendopcache-7.0.5
+# php zendopcache-7.0.5
 FROM build-php AS build-zendopcache
 
 WORKDIR /srv/zendopcache-7.0.5
@@ -413,24 +375,24 @@ RUN make install
 # release
 FROM debian:13.1-slim AS release
 
-LABEL org.opencontainers.image.documentation="https://github.com/STaRDoGG/docker-php-5.2" \
-      org.opencontainers.image.source="https://github.com/STaRDoGG/docker-php-5.2" \
+LABEL org.opencontainers.image.documentation="https://github.com/jscottelblein/docker-php-5.2" \
+      org.opencontainers.image.source="https://github.com/jscottelblein/docker-php-5.2" \
       org.opencontainers.image.description="Docker image for PHP 5.2.17 + Apache + XDebug" \
-      org.opencontainers.image.authors="Fork: J. Scott Elblein <https://github.com/STaRDoGG>, Original: Cláudio Gomes <https://github.com/clagomess>" \
-      org.opencontainers.image.url="ghcr.io/stardogg/docker-php-5.2:latest"
+      org.opencontainers.image.authors="Fork: J. Scott Elblein <https://github.com/jscottelblein>, Original: Cláudio Gomes <https://github.com/clagomess>" \
+      org.opencontainers.image.url="ghcr.io/jscottelblein/docker-php-5.2:latest"
 
 ENV TZ=America/Chicago
 
 WORKDIR /var/www/html
 
-RUN --mount=type=cache,target=/var/cache/apt,id=cache-release \
- --mount=type=cache,target=/var/lib/apt,id=cache-release \
- DEBIAN_FRONTEND=noninteractive apt update \
- && apt install tzdata libltdl7 libnsl2 libpq5 libgd3 libmcrypt4 -y \
- && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
- && echo $TZ > /etc/timezone
+RUN --mount=type=cache,target=/var/cache/apt,id=cache-release-apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,id=cache-release-lists,sharing=locked \
+    DEBIAN_FRONTEND=noninteractive apt-get update && \
+    apt-get install -y tzdata libltdl7 libnsl2 libpq5 libgd3 libmcrypt4 && \
+    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
+    echo $TZ > /etc/timezone && \
+    rm -rf /var/lib/apt/lists/*
 
-# copy libs
 COPY --from=build-openssl /opt/openssl-0.9.8h /opt/openssl-0.9.8h
 COPY --from=build-curl /opt/curl-7.19.7 /opt/curl-7.19.7
 COPY --from=build-libxml2 /opt/libxml2-2.8.0 /opt/libxml2-2.8.0
@@ -441,14 +403,12 @@ COPY --from=build-zendopcache /opt/php-5.2.17/lib/php/extensions/no-debug-non-zt
 COPY --from=build-xdebug /opt/php-5.2.17/lib/php/extensions/no-debug-non-zts-20060613/xdebug.so /opt/php-5.2.17/lib/php/extensions/no-debug-non-zts-20060613/xdebug.so
 COPY --from=build-mysql /opt/mysql-5.0.95 /opt/mysql-5.0.95
 
-# config libs
 RUN echo "/opt/openssl-0.9.8h/lib" > /etc/ld.so.conf.d/openssl.conf && \
- echo "/opt/libxml2-2.8.0/lib" > /etc/ld.so.conf.d/libxml2.conf && \
- ln -s /opt/curl-7.19.7/bin/curl /usr/bin/curl && \
- ln -s /opt/php-5.2.17/bin/php /usr/bin/php && \
- ldconfig
+    echo "/opt/libxml2-2.8.0/lib" > /etc/ld.so.conf.d/libxml2.conf && \
+    ln -s /opt/curl-7.19.7/bin/curl /usr/bin/curl && \
+    ln -s /opt/php-5.2.17/bin/php /usr/bin/php && \
+    ldconfig
 
-# create docroot + log files
 RUN mkdir -p /var/log/php \
     && mkdir -p /var/log/apache \
     && mkdir -p /var/www/html \
@@ -462,6 +422,5 @@ RUN mkdir -p /var/log/php \
     && chown www-data:www-data /var/log/apache/access_log \
     && chown www-data:www-data /var/log/apache/error_log
 
-# entrypoint
 COPY ./init.sh /opt/init.sh
 CMD ["bash", "/opt/init.sh"]
