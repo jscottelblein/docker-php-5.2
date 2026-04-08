@@ -3,7 +3,25 @@ FROM debian:13.1-slim AS build-base
 RUN --mount=type=cache,target=/var/cache/apt,id=cache-base \
     --mount=type=cache,target=/var/lib/apt,id=cache-base \
     DEBIAN_FRONTEND=noninteractive apt update \
-    && apt install wget vim xz-utils -y
+    && apt install -y \
+           autoconf \
+           automake \
+           bison \
+           build-essential \
+           ca-certificates \
+           file \
+           gzip \
+           iputils-ping \
+           libtool \
+           make \
+           nano \
+           patch \
+           pkg-config \
+           re2c \
+           tar \
+           vim \
+           wget \
+           xz-utils
 
 # gmp-4.3.2
 FROM build-base AS build-gmp
@@ -278,33 +296,22 @@ FROM build-gcc AS build-php
 WORKDIR /srv/php-5.2.17
 
 RUN wget --no-verbose https://museum.php.net/php5/php-5.2.17.tar.gz \
-    -O /srv/php-5.2.17.tar.gz
-RUN tar -xf /srv/php-5.2.17.tar.gz  \
-    --one-top-level=php-5.2.17 \
-    --strip-components=1 \
-    -C /srv/
+ -O /srv/php-5.2.17.tar.gz
 
-# oracle
-RUN --mount=type=cache,target=/var/cache/apt,id=cache-php \
-    --mount=type=cache,target=/var/lib/apt,id=cache-php \
-    DEBIAN_FRONTEND=noninteractive apt update && \
-    apt install libaio-dev -y && \
-    ln -s /usr/lib/$(uname -m)-linux-gnu/libaio.so.1t64 /usr/lib/$(uname -m)-linux-gnu/libaio.so.1
-
-COPY --from=build-oracle /opt/oracle /opt/oracle
-
-RUN echo "/opt/oracle/instantclient" > /etc/ld.so.conf.d/oracle-instantclient.conf \
-    && ldconfig
+RUN tar -xf /srv/php-5.2.17.tar.gz \
+ --one-top-level=php-5.2.17 \
+ --strip-components=1 \
+ -C /srv/
 
 # jpg/png
 RUN ln -s /usr/lib/$(uname -m)-linux-gnu/libjpeg.so /usr/lib/ \
-    && ln -s /usr/lib/$(uname -m)-linux-gnu/libpng.so /usr/lib/
+ && ln -s /usr/lib/$(uname -m)-linux-gnu/libpng.so /usr/lib/
 
 # other libs
 RUN --mount=type=cache,target=/var/cache/apt,id=cache-php \
-    --mount=type=cache,target=/var/lib/apt,id=cache-php \
-    DEBIAN_FRONTEND=noninteractive apt update && \
-    apt install libpq-dev libgd-dev libmcrypt-dev libltdl-dev -y
+ --mount=type=cache,target=/var/lib/apt,id=cache-php \
+ DEBIAN_FRONTEND=noninteractive apt update && \
+ apt install libpq-dev libgd-dev libmcrypt-dev libltdl-dev -y
 
 COPY --from=build-httpd /opt/httpd-2.2.3 /opt/httpd-2.2.3
 COPY --from=build-libxml2 /opt/libxml2-2.8.0 /opt/libxml2-2.8.0
@@ -312,49 +319,47 @@ COPY --from=build-openssl /opt/openssl-0.9.8h /opt/openssl-0.9.8h
 COPY --from=build-curl /opt/curl-7.19.7 /opt/curl-7.19.7
 COPY --from=build-mysql /opt/mysql-5.0.95 /opt/mysql-5.0.95
 
-# ./configure --help
 RUN ./configure \
-    --host=$(uname -m)-unknown-linux-gnu \
-    --prefix=/opt/php-5.2.17 \
-    --with-gnu-ld \
-    --with-config-file-scan-dir=/opt/php-5.2.17/php.ini.d \
-    --with-apxs2=/opt/httpd-2.2.3/bin/apxs \
-    --with-libxml-dir=/opt/libxml2-2.8.0 \
-    --with-pgsql \
-    --with-pdo-pgsql \
-    --with-gd \
-    --with-curl=/opt/curl-7.19.7 \
-    --enable-soap \
-    --with-mcrypt \
-    --enable-mbstring \
-    --enable-calendar \
-    --enable-bcmath \
-    --enable-zip \
-    --enable-exif \
-    --enable-ftp \
-    --enable-shmop \
-    --enable-sockets \
-    --enable-sysvmsg \
-    --enable-sysvsem \
-    --enable-sysvshm \
-    --enable-wddx \
-    --enable-dba \
-    --with-openssl=/opt/openssl-0.9.8h \
-    --with-gettext \
-    --with-mime-magic=/opt/httpd-2.2.3/conf/magic \
-    --with-oci8=instantclient,/opt/oracle/instantclient \
-    --with-pdo-oci=instantclient,/opt/oracle,11.2 \
-    --with-ttf \
-    --with-png-dir=/usr \
-    --with-jpeg-dir=/usr \
-    --with-freetype-dir=/usr \
-    --with-zlib \
-    --with-mysqli=/opt/mysql-5.0.95/bin/mysql_config \
-    --with-mysql=/opt/mysql-5.0.95 \
-    --with-pdo-mysql=/opt/mysql-5.0.95
+ --host=$(uname -m)-unknown-linux-gnu \
+ --prefix=/opt/php-5.2.17 \
+ --with-gnu-ld \
+ --with-config-file-scan-dir=/opt/php-5.2.17/php.ini.d \
+ --with-apxs2=/opt/httpd-2.2.3/bin/apxs \
+ --with-libxml-dir=/opt/libxml2-2.8.0 \
+ --with-pgsql \
+ --with-pdo-pgsql \
+ --with-gd \
+ --with-curl=/opt/curl-7.19.7 \
+ --enable-soap \
+ --with-mcrypt \
+ --enable-mbstring \
+ --enable-calendar \
+ --enable-bcmath \
+ --enable-zip \
+ --enable-exif \
+ --enable-ftp \
+ --enable-shmop \
+ --enable-sockets \
+ --enable-sysvmsg \
+ --enable-sysvsem \
+ --enable-sysvshm \
+ --enable-wddx \
+ --enable-dba \
+ --with-openssl=/opt/openssl-0.9.8h \
+ --with-gettext \
+ --with-mime-magic=/opt/httpd-2.2.3/conf/magic \
+ --with-ttf \
+ --with-png-dir=/usr \
+ --with-jpeg-dir=/usr \
+ --with-freetype-dir=/usr \
+ --with-zlib \
+ --with-mysqli=/opt/mysql-5.0.95/bin/mysql_config \
+ --with-mysql=/opt/mysql-5.0.95 \
+ --with-pdo-mysql=/opt/mysql-5.0.95
 
 RUN make -j$(nproc)
 RUN make install
+
 RUN cp /srv/php-5.2.17/php.ini-dist /opt/php-5.2.17/lib/php.ini
 ADD ./soap-includes.tar.gz /opt/php-5.2.17/lib/php
 COPY php.ini.d /opt/php-5.2.17/php.ini.d/
@@ -410,30 +415,24 @@ RUN make install
 # release
 FROM debian:13.1-slim AS release
 
-LABEL org.opencontainers.image.source=https://github.com/clagomess/docker-php-5.2
-LABEL org.opencontainers.image.description="Functional docker image for legacy PHP 5.2 + HTTPD + XDEBUG"
+LABEL org.opencontainers.image.documentation="https://github.com/STaRDoGG/docker-php-5.2" \
+      org.opencontainers.image.source="https://github.com/STaRDoGG/docker-php-5.2" \
+      org.opencontainers.image.description="Docker image for PHP 5.2.17 + Apache + XDebug" \
+      org.opencontainers.image.authors="Fork: J. Scott Elblein <https://github.com/STaRDoGG>, Original: Cláudio Gomes <https://github.com/clagomess>" \
+      org.opencontainers.image.url="ghcr.io/stardogg/docker-php-5.2:latest"
 
-WORKDIR /srv/htdocs
+ENV TZ=America/Chicago
+
+WORKDIR /var/www/html
 
 RUN --mount=type=cache,target=/var/cache/apt,id=cache-release \
-    --mount=type=cache,target=/var/lib/apt,id=cache-release \
-    DEBIAN_FRONTEND=noninteractive apt update \
-    && apt install locales libltdl7 libaio1t64 libnsl2 libpq5 libgd3 libmcrypt4 ssh -y \
-    && ln -s /usr/lib/$(uname -m)-linux-gnu/libaio.so.1t64 /usr/lib/$(uname -m)-linux-gnu/libaio.so.1
-
-# add locale
-RUN locale-gen pt_BR.UTF-8 \
-&& echo "locales locales/locales_to_be_generated multiselect pt_BR.UTF-8 UTF-8" | debconf-set-selections \
-&& rm /etc/locale.gen \
-&& dpkg-reconfigure --frontend noninteractive locales
-
-# ssh user
-RUN useradd -m -s /bin/bash -d /srv/htdocs php && \
-    echo "php:php" | chpasswd && \
-    usermod -aG www-data php
+ --mount=type=cache,target=/var/lib/apt,id=cache-release \
+ DEBIAN_FRONTEND=noninteractive apt update \
+ && apt install tzdata libltdl7 libnsl2 libpq5 libgd3 libmcrypt4 -y \
+ && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
+ && echo $TZ > /etc/timezone
 
 # copy libs
-COPY --from=build-oracle /opt/oracle /opt/oracle
 COPY --from=build-openssl /opt/openssl-0.9.8h /opt/openssl-0.9.8h
 COPY --from=build-curl /opt/curl-7.19.7 /opt/curl-7.19.7
 COPY --from=build-libxml2 /opt/libxml2-2.8.0 /opt/libxml2-2.8.0
@@ -445,20 +444,21 @@ COPY --from=build-xdebug /opt/php-5.2.17/lib/php/extensions/no-debug-non-zts-200
 COPY --from=build-mysql /opt/mysql-5.0.95 /opt/mysql-5.0.95
 
 # config libs
-RUN echo "/opt/oracle/instantclient" > /etc/ld.so.conf.d/oracle-instantclient.conf && \
-    echo "/opt/openssl-0.9.8h/lib" > /etc/ld.so.conf.d/openssl.conf && \
-    echo "/opt/libxml2-2.8.0/lib" > /etc/ld.so.conf.d/libxml2.conf && \
-    ln -s /opt/curl-7.19.7/bin/curl /usr/bin/curl && \
-    ln -s /opt/php-5.2.17/bin/php /usr/bin/php && \
-    ldconfig
+RUN echo "/opt/openssl-0.9.8h/lib" > /etc/ld.so.conf.d/openssl.conf && \
+ echo "/opt/libxml2-2.8.0/lib" > /etc/ld.so.conf.d/libxml2.conf && \
+ ln -s /opt/curl-7.19.7/bin/curl /usr/bin/curl && \
+ ln -s /opt/php-5.2.17/bin/php /usr/bin/php && \
+ ldconfig
 
-# create log files
-RUN mkdir /var/log/php \
-    && mkdir /var/log/apache \
+# create docroot + log files
+RUN mkdir -p /var/log/php \
+    && mkdir -p /var/log/apache \
+    && mkdir -p /var/www/html \
     && touch /var/log/php/error.log \
     && touch /var/log/php/xdebug.log \
     && touch /var/log/apache/access_log \
     && touch /var/log/apache/error_log \
+    && chown -R www-data:www-data /var/www/html \
     && chown www-data:www-data /var/log/php/error.log \
     && chown www-data:www-data /var/log/php/xdebug.log \
     && chown www-data:www-data /var/log/apache/access_log \
