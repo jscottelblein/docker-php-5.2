@@ -43,7 +43,6 @@ docker run --rm \
 
 Things **added** that were not in the original image:
 
-- Support for MySQL/MariaDB
 - Some command-line tools (gzip, nano, ping, tar)
 - New environment variables
 
