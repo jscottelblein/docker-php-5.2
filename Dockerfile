@@ -240,6 +240,10 @@ COPY --from=build-openssl /opt/openssl-0.9.8h /opt/openssl-0.9.8h
 COPY --from=build-curl /opt/curl-7.19.7 /opt/curl-7.19.7
 COPY --from=build-mysql /opt/mysql-5.0.95 /opt/mysql-5.0.95
 
+ENV LD_LIBRARY_PATH=/opt/libxml2-2.8.0/lib
+
+RUN echo "/opt/libxml2-2.8.0/lib" > /etc/ld.so.conf.d/libxml2.conf && ldconfig
+
 RUN CC=gcc-12 CXX=g++-12 ./configure \
     --host=$(uname -m)-unknown-linux-gnu \
     --prefix=/opt/php-5.2.17 \
