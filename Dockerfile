@@ -78,46 +78,6 @@ RUN ./configure \
 RUN make -j$(nproc)
 RUN make install
 
-# gcc-8.2.0
-FROM build-base AS build-gcc
-
-WORKDIR /srv/gcc-8.2.0
-
-RUN wget --no-verbose https://ftpmirror.gnu.org/gcc/gcc-8.2.0/gcc-8.2.0.tar.gz \
-    -O /srv/gcc-8.2.0.tar.gz
-RUN tar -xf /srv/gcc-8.2.0.tar.gz -C /srv/
-
-RUN --mount=type=cache,target=/var/cache/apt,id=cache-gcc-apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,id=cache-gcc-lists,sharing=locked \
-    DEBIAN_FRONTEND=noninteractive apt-get update && \
-    apt-get install -y build-essential && \
-    rm -rf /var/lib/apt/lists/*
-
-COPY --from=build-gmp /opt/gmp-4.3.2 /opt/gmp-4.3.2
-COPY --from=build-mpfr /opt/mpfr-2.4.2 /opt/mpfr-2.4.2
-COPY --from=build-mpc /opt/mpc-1.0.1 /opt/mpc-1.0.1
-
-RUN ln -s /opt/mpfr-2.4.2/lib/libmpfr.so.1 /lib/$(uname -m)-linux-gnu/libmpfr.so.1 && \
-    ln -s /opt/gmp-4.3.2/lib/libgmp.so.3 /lib/$(uname -m)-linux-gnu/libgmp.so.3 && \
-    ldconfig
-
-RUN ./configure \
-    --prefix /opt/gcc-8.2.0 \
-    --with-gmp=/opt/gmp-4.3.2 \
-    --with-mpfr=/opt/mpfr-2.4.2 \
-    --with-mpc=/opt/mpc-1.0.1 \
-    --enable-languages=c,c++ \
-    --disable-multilib \
-    --disable-libcc1 \
-    --disable-libitm \
-    --disable-libsanitizer \
-    --disable-libquadmath \
-    --disable-libvtv
-RUN make -j$(nproc)
-RUN make install
-RUN ldconfig -n /opt/gcc-8.2.0/lib/../lib64 && \
-    ln -sf /opt/gcc-8.2.0/bin/gcc /usr/bin/gcc
-
 # httpd-2.2.3
 FROM build-base AS build-httpd
 
@@ -252,7 +212,7 @@ RUN make
 RUN make install
 
 # php-5.2.17
-FROM build-gcc AS build-php
+FROM build-base AS build-php
 
 WORKDIR /srv/php-5.2.17
 
@@ -270,7 +230,8 @@ RUN ln -s /usr/lib/$(uname -m)-linux-gnu/libjpeg.so /usr/lib/ \
 RUN --mount=type=cache,target=/var/cache/apt,id=cache-php-apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,id=cache-php-lists,sharing=locked \
     DEBIAN_FRONTEND=noninteractive apt-get update && \
-    apt-get install -y libpq-dev libgd-dev libmcrypt-dev libltdl-dev && \
+    apt-get install -y gcc-12 g++-12 libpq-dev libgd-dev libmcrypt-dev \
+      libltdl-dev && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=build-httpd /opt/httpd-2.2.3 /opt/httpd-2.2.3
@@ -279,7 +240,7 @@ COPY --from=build-openssl /opt/openssl-0.9.8h /opt/openssl-0.9.8h
 COPY --from=build-curl /opt/curl-7.19.7 /opt/curl-7.19.7
 COPY --from=build-mysql /opt/mysql-5.0.95 /opt/mysql-5.0.95
 
-RUN ./configure \
+RUN CC=gcc-12 CXX=g++-12 ./configure \
     --host=$(uname -m)-unknown-linux-gnu \
     --prefix=/opt/php-5.2.17 \
     --with-gnu-ld \
